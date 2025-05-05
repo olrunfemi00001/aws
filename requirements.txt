@@ -1,0 +1,9 @@
+Django>=4.2
+djangorestframework
+celery
+redis
+gunicorn
+drf-yasg
+python-dotenv
+whitenoise
+djangorestframework-simplejwt
