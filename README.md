@@ -1,7 +1,7 @@
 
 # AWS Django Microservice
 
-A production ready Django microservice that processes background tasks asynchronously using Celery and Redis. The project is containerized with Docker, deployed to AWS using Terraform (Infrastructure as Code), and powered by a GitHub Actions CI/CD pipeline.
+A production-ready Django microservice that processes background tasks asynchronously using Celery and Redis. The project is containerized with Docker, deployed to AWS using Terraform (Infrastructure as Code), and powered by a GitHub Actions CI/CD pipeline.
 
 ## Features
 
