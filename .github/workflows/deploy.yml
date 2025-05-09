@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.set_outputs.outputs.tag }}
     steps:
@@ -37,7 +37,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Connect to Server via SSH and Deploy
         uses: appleboy/ssh-action@v0.1.8
