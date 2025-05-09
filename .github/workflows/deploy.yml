@@ -29,18 +29,29 @@ jobs:
       - name: Build Docker Image
         run: docker build -f $DOCKERFILE -t django-microservice:latest .
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SERVER_PUBLIC_DNS }} >> ~/.ssh/known_hosts
+      - name: Save Docker Image
+        run: docker save -o django-microservice.tar django-microservice:latest
 
-      - name: Copy Files to Server
-        run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_PUBLIC_DNS }}:~/django-microservice
-
-      - name: Build and Run Docker Container on Server
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.SERVER_PUBLIC_DNS }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            mkdir -p ~/django-microservice
+          
+      - name: Transfer Docker Image to Server
+        uses: appleboy/scp-action@v0.1.8
+        with:
+          host: ${{ secrets.SERVER_PUBLIC_DNS }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "django-microservice.tar"
+          target: "~/django-microservice"
+          
+      - name: Run Docker Container on Server
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.SERVER_PUBLIC_DNS }}
@@ -48,9 +59,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/django-microservice
+            docker load -i django-microservice.tar
             docker stop django-microservice || true
             docker rm django-microservice || true
-            docker build -t django-microservice:latest .
             docker run -d --restart always -p 8000:8000 \
-            --name django-microservice \
-            django-microservice:latest
+              --name django-microservice \
+              django-microservice:latest
