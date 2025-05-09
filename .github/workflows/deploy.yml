@@ -29,14 +29,16 @@ jobs:
       - name: Build Docker Image
         run: docker build -f $DOCKERFILE -t django-microservice:latest .
 
-      - name: Write SSH Key to File
+      - name: Setup SSH
         run: |
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_PUBLIC_DNS }} >> ~/.ssh/known_hosts
 
       - name: Copy Files to Server
         run: |
-          scp -i ~/.ssh/id_rsa -r ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_PUBLIC_DNS }}:~/django-microservice
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_PUBLIC_DNS }}:~/django-microservice
 
       - name: Build and Run Docker Container on Server
         uses: appleboy/ssh-action@v0.1.8
