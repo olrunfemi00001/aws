@@ -26,30 +26,24 @@ jobs:
           echo "TAG=latest" >> $GITHUB_ENV
           echo "::set-output name=tag::latest"
 
-      - name: Login to Docker Hub
-        run: docker login -u '${{ secrets.DOCKER_USERNAME }}' -p '${{ secrets.DOCKER_PASSWORD }}'
-
       - name: Build Docker Image
-        run: docker build -f $DOCKERFILE -t ${{ secrets.DOCKER_REPO }}:${{ env.TAG }} .
+        run: docker build -f $DOCKERFILE -t django-microservice:latest .
 
-      - name: Push Docker Image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_REPO }}:${{ env.TAG }}
+      - name: Copy Files to Server
+        run: |
+          scp -i ${{ secrets.SSH_PRIVATE_KEY }} -r ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_PUBLIC_DNS }}:~/django-microservice
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Connect to Server via SSH and Deploy
+      - name: Build and Run Docker Container on Server
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.SERVER_PUBLIC_DNS }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker login -u '${{ secrets.DOCKER_USERNAME }}' -p '${{ secrets.DOCKER_PASSWORD }}'
-            docker pull ${{ secrets.DOCKER_REPO }}:${{ needs.build.outputs.tag }}
+            cd ~/django-microservice
             docker stop django-microservice || true
             docker rm django-microservice || true
+            docker build -t django-microservice:latest .
             docker run -d --restart always -p 8000:8000 \
             --name django-microservice \
-            ${{ secrets.DOCKER_REPO }}:${{ needs.build.outputs.tag }}
+            django-microservice:latest
